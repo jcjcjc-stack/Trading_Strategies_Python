@@ -34,9 +34,9 @@ def backtest_macd_bollinger_confirmation(asset, price_col='price',
     bearish_macd = df['macd'] < df['macd_signal']
 
     df['long_entry'] = (df[price_col] > df['middle_band']) & (prev_price <= prev_middle) & bullish_macd
-    df['long_exit'] = ((df[price_col] < df['middle_band']) & (prev_price >= prev_middle)) | bearish_macd
+    df['long_exit'] = ((df[price_col] < df['middle_band']) & (prev_price >= prev_middle)) & bearish_macd
     df['short_entry'] = (df[price_col] < df['middle_band']) & (prev_price >= prev_middle) & bearish_macd
-    df['short_exit'] = ((df[price_col] > df['middle_band']) & (prev_price <= prev_middle)) | bullish_macd
+    df['short_exit'] = ((df[price_col] > df['middle_band']) & (prev_price <= prev_middle)) & bullish_macd
 
     # ---------- Position ----------
     df['signal_raw'] = 0

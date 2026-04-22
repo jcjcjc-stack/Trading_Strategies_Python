@@ -15,16 +15,16 @@ def backtest_macd(asset, price_col='price',
     df['ema_slow'] = df[price_col].ewm(span=slow, adjust=False).mean()
 
     df['macd'] = df['ema_fast'] - df['ema_slow']
-    df['signal'] = df['macd'].ewm(span=signal, adjust=False).mean()
-    df['histogram'] = df['macd'] - df['signal']
+    df['macd_signal'] = df['macd'].ewm(span=signal, adjust=False).mean()
+    df['histogram'] = df['macd'] - df['macd_signal']
 
     # ---------- Trading Signal ----------
     # Entry/exit events based on MACD crossing the signal line.
     prev_macd = df['macd'].shift(1)
-    prev_signal = df['signal'].shift(1)
-
-    df['long_entry'] = (df['macd'] > df['signal']) & (prev_macd <= prev_signal)
-    df['long_exit'] = (df['macd'] < df['signal']) & (prev_macd >= prev_signal)
+    prev_signal = df['macd_signal'].shift(1)
+ 
+    df['long_entry'] = (df['macd'] > df['macd_signal']) & (prev_macd <= prev_signal)
+    df['long_exit'] = (df['macd'] < df['macd_signal']) & (prev_macd >= prev_signal)
     df['short_entry'] = df['long_exit']
     df['short_exit'] = df['long_entry']
 
