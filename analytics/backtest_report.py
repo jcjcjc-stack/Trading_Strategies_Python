@@ -4,10 +4,11 @@ from connectors.binance import load_binance_klines
 from connectors.yfinance import load_yfinance_asset
 from data.monte_carlo_asset import load_asset
 from strategies.bollinger_bands import backtest_bollinger_band
+from strategies.crossover_ema import backtest_crossover_ema
+from strategies.crossover_sma import backtest_crossover_sma
 from strategies.donchian_breakout import backtest_donchian_channel_breakout
 from strategies.macd import backtest_macd
 from strategies.macd_bollinger_confirmation import backtest_macd_bollinger_confirmation
-from strategies.moving_average_cross import backtest_ma_cross
 from strategies.rsi_mean_reversion import backtest_rsi_mean_reversion
 from strategies.trend_rsi_pullback import backtest_trend_rsi_pullback
 from strategies.zscore_mean_reversion import backtest_z_score_mean_reversion
@@ -16,10 +17,11 @@ from analytics.performance_metrics import summarize_strategy_results
 
 STRATEGIES = {
     "Bollinger Band": backtest_bollinger_band,
+    "Crossover EMA": backtest_crossover_ema,
+    "Crossover SMA": backtest_crossover_sma,
     "Donchian Channel Breakout": backtest_donchian_channel_breakout,
     "MACD": backtest_macd,
     "MACD Bollinger Confirmation": backtest_macd_bollinger_confirmation,
-    "MA Cross": backtest_ma_cross,
     "RSI Mean Reversion": backtest_rsi_mean_reversion,
     "Trend RSI Pullback": backtest_trend_rsi_pullback,
     "Z Score Mean Reversion": backtest_z_score_mean_reversion,
@@ -78,8 +80,11 @@ def run_tests(args=None):
     asset = load_test_asset(args)
 
     print()
-    print("Asset preview:")
+    print("Asset preview first rows:")
     print(asset.head())
+    print()
+    print("Asset preview latest rows:")
+    print(asset.tail())
     print()
 
     print("Strategy results:")

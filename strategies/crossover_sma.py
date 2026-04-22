@@ -5,14 +5,20 @@ import pandas as pd
 # requires column: 'price'
 # datetime index already set
 
-def backtest_ma_cross(asset, price_col='price',
-                      fast_window=20, slow_window=50):
+def backtest_crossover_sma(asset, price_col='price',
+                           fast_window=20, slow_window=50):
 
     df = asset.copy()
 
     # ---------- Indicators ----------
-    df['ma_fast'] = df[price_col].rolling(window=fast_window).mean()
-    df['ma_slow'] = df[price_col].rolling(window=slow_window).mean()
+    df['ma_fast'] = df[price_col].rolling(
+        window=fast_window,
+        min_periods=1,
+    ).mean()
+    df['ma_slow'] = df[price_col].rolling(
+        window=slow_window,
+        min_periods=1,
+    ).mean()
 
     # ---------- Trading Signal ----------
     prev_fast = df['ma_fast'].shift(1)
@@ -63,8 +69,9 @@ if __name__ == "__main__":
     from data.monte_carlo_asset import load_asset
 
     asset = load_asset()
-    results = backtest_ma_cross(asset)
+    results = backtest_crossover_sma(asset)
 
     print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("MA Cross Strategy:", results['cum_strategy'].iloc[-1])
+    print("Crossover SMA Strategy:", results['cum_strategy'].iloc[-1])
     print(results.tail())
+    print(results[['price', 'ma_fast','ma_slow']].head(15))
