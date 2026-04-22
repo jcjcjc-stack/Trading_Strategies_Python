@@ -5,38 +5,32 @@ import pandas as pd
 # requires column: 'price'
 # datetime index already set
 
-def backtest_macd_bollinger_confirmation(asset, price_col='price',
-                                         fast=12, slow=26, signal=9,
-                                         bb_window=20, num_std=2):
+def backtest_bollinger_band(asset, price_col='price',
+                            window=20, num_std=2):
 
     df = asset.copy()
 
     # ---------- Indicators ----------
-    df['ema_fast'] = df[price_col].ewm(span=fast, adjust=False).mean()
-    df['ema_slow'] = df[price_col].ewm(span=slow, adjust=False).mean()
-    df['macd'] = df['ema_fast'] - df['ema_slow']
-    df['macd_signal'] = df['macd'].ewm(span=signal, adjust=False).mean()
-    df['histogram'] = df['macd'] - df['macd_signal']
-
-    df['middle_band'] = df[price_col].rolling(window=bb_window).mean()
-    df['std'] = df[price_col].rolling(window=bb_window).std()
+    df['middle_band'] = df[price_col].rolling(window=window).mean()
+    df['std'] = df[price_col].rolling(window=window).std()
     df['upper_band'] = df['middle_band'] + (num_std * df['std'])
     df['lower_band'] = df['middle_band'] - (num_std * df['std'])
 
     # ---------- Trading Signal ----------
-    # Confirmation logic:
-    # long when price crosses above middle band and MACD confirms bullish momentum
-    # short when price crosses below middle band and MACD confirms bearish momentum
+    # Mean reversion logic:
+    # long entry when price crosses below lower band
+    # long exit when price crosses back above middle band
+    # short entry when price crosses above upper band
+    # short exit when price crosses back below middle band
     prev_price = df[price_col].shift(1)
+    prev_lower = df['lower_band'].shift(1)
+    prev_upper = df['upper_band'].shift(1)
     prev_middle = df['middle_band'].shift(1)
 
-    bullish_macd = df['macd'] > df['macd_signal']
-    bearish_macd = df['macd'] < df['macd_signal']
-
-    df['long_entry'] = (df[price_col] > df['middle_band']) & (prev_price <= prev_middle) & bullish_macd
-    df['long_exit'] = ((df[price_col] < df['middle_band']) & (prev_price >= prev_middle)) & bearish_macd
-    df['short_entry'] = (df[price_col] < df['middle_band']) & (prev_price >= prev_middle) & bearish_macd
-    df['short_exit'] = ((df[price_col] > df['middle_band']) & (prev_price <= prev_middle)) & bullish_macd
+    df['long_entry'] = (df[price_col] < df['lower_band']) & (prev_price >= prev_lower)
+    df['long_exit'] = (df[price_col] > df['middle_band']) & (prev_price <= prev_middle)
+    df['short_entry'] = (df[price_col] > df['upper_band']) & (prev_price <= prev_upper)
+    df['short_exit'] = (df[price_col] < df['middle_band']) & (prev_price >= prev_middle)
 
     # ---------- Position ----------
     df['signal_raw'] = 0
@@ -75,11 +69,11 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.asset_monte_carlo import load_asset
+    from data.monte_carlo_asset import load_asset
 
     asset = load_asset()
-    results = backtest_macd_bollinger_confirmation(asset)
+    results = backtest_bollinger_band(asset)
 
     print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("MACD Bollinger Confirmation Strategy:", results['cum_strategy'].iloc[-1])
+    print("Bollinger Band Strategy:", results['cum_strategy'].iloc[-1])
     print(results.tail())

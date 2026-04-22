@@ -5,32 +5,27 @@ import pandas as pd
 # requires column: 'price'
 # datetime index already set
 
-def backtest_bollinger_band(asset, price_col='price',
-                            window=20, num_std=2):
+def backtest_z_score_mean_reversion(asset, price_col='price',
+                                    window=20, entry_z=2.0,
+                                    exit_z=0.0):
 
     df = asset.copy()
 
     # ---------- Indicators ----------
-    df['middle_band'] = df[price_col].rolling(window=window).mean()
-    df['std'] = df[price_col].rolling(window=window).std()
-    df['upper_band'] = df['middle_band'] + (num_std * df['std'])
-    df['lower_band'] = df['middle_band'] - (num_std * df['std'])
+    df['rolling_mean'] = df[price_col].rolling(window=window).mean()
+    df['rolling_std'] = df[price_col].rolling(window=window).std()
+    df['z_score'] = (df[price_col] - df['rolling_mean']) / df['rolling_std']
 
     # ---------- Trading Signal ----------
     # Mean reversion logic:
-    # long entry when price crosses below lower band
-    # long exit when price crosses back above middle band
-    # short entry when price crosses above upper band
-    # short exit when price crosses back below middle band
-    prev_price = df[price_col].shift(1)
-    prev_lower = df['lower_band'].shift(1)
-    prev_upper = df['upper_band'].shift(1)
-    prev_middle = df['middle_band'].shift(1)
+    # long when z-score crosses below -entry_z, exit near exit_z
+    # short when z-score crosses above entry_z, exit near exit_z
+    prev_z = df['z_score'].shift(1)
 
-    df['long_entry'] = (df[price_col] < df['lower_band']) & (prev_price >= prev_lower)
-    df['long_exit'] = (df[price_col] > df['middle_band']) & (prev_price <= prev_middle)
-    df['short_entry'] = (df[price_col] > df['upper_band']) & (prev_price <= prev_upper)
-    df['short_exit'] = (df[price_col] < df['middle_band']) & (prev_price >= prev_middle)
+    df['long_entry'] = (df['z_score'] < -entry_z) & (prev_z >= -entry_z)
+    df['long_exit'] = (df['z_score'] > exit_z) & (prev_z <= exit_z)
+    df['short_entry'] = (df['z_score'] > entry_z) & (prev_z <= entry_z)
+    df['short_exit'] = (df['z_score'] < -exit_z) & (prev_z >= -exit_z)
 
     # ---------- Position ----------
     df['signal_raw'] = 0
@@ -69,11 +64,11 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.asset_monte_carlo import load_asset
+    from data.monte_carlo_asset import load_asset
 
     asset = load_asset()
-    results = backtest_bollinger_band(asset)
+    results = backtest_z_score_mean_reversion(asset)
 
     print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("Bollinger Band Strategy:", results['cum_strategy'].iloc[-1])
+    print("Z Score Mean Reversion Strategy:", results['cum_strategy'].iloc[-1])
     print(results.tail())

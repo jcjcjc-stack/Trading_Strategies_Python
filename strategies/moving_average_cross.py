@@ -5,27 +5,23 @@ import pandas as pd
 # requires column: 'price'
 # datetime index already set
 
-def backtest_z_score_mean_reversion(asset, price_col='price',
-                                    window=20, entry_z=2.0,
-                                    exit_z=0.0):
+def backtest_ma_cross(asset, price_col='price',
+                      fast_window=20, slow_window=50):
 
     df = asset.copy()
 
     # ---------- Indicators ----------
-    df['rolling_mean'] = df[price_col].rolling(window=window).mean()
-    df['rolling_std'] = df[price_col].rolling(window=window).std()
-    df['z_score'] = (df[price_col] - df['rolling_mean']) / df['rolling_std']
+    df['ma_fast'] = df[price_col].rolling(window=fast_window).mean()
+    df['ma_slow'] = df[price_col].rolling(window=slow_window).mean()
 
     # ---------- Trading Signal ----------
-    # Mean reversion logic:
-    # long when z-score crosses below -entry_z, exit near exit_z
-    # short when z-score crosses above entry_z, exit near exit_z
-    prev_z = df['z_score'].shift(1)
+    prev_fast = df['ma_fast'].shift(1)
+    prev_slow = df['ma_slow'].shift(1)
 
-    df['long_entry'] = (df['z_score'] < -entry_z) & (prev_z >= -entry_z)
-    df['long_exit'] = (df['z_score'] > exit_z) & (prev_z <= exit_z)
-    df['short_entry'] = (df['z_score'] > entry_z) & (prev_z <= entry_z)
-    df['short_exit'] = (df['z_score'] < -exit_z) & (prev_z >= -exit_z)
+    df['long_entry'] = (df['ma_fast'] > df['ma_slow']) & (prev_fast <= prev_slow)
+    df['long_exit'] = (df['ma_fast'] < df['ma_slow']) & (prev_fast >= prev_slow)
+    df['short_entry'] = df['long_exit']
+    df['short_exit'] = df['long_entry']
 
     # ---------- Position ----------
     df['signal_raw'] = 0
@@ -64,11 +60,11 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.asset_monte_carlo import load_asset
+    from data.monte_carlo_asset import load_asset
 
     asset = load_asset()
-    results = backtest_z_score_mean_reversion(asset)
+    results = backtest_ma_cross(asset)
 
     print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("Z Score Mean Reversion Strategy:", results['cum_strategy'].iloc[-1])
+    print("MA Cross Strategy:", results['cum_strategy'].iloc[-1])
     print(results.tail())

@@ -15,12 +15,12 @@ Python backtesting playground for comparing technical trading strategies on a sa
 
 ## Project Layout
 
-- `run_strategy_tests.py` runs all strategies and prints a comparison table.
+- `run_backtests.py` runs the strategy comparison with interactive presets and prompts.
 - `connectors/` contains market data connectors.
 - `strategies/` contains individual strategy backtests.
-- `analytics/` contains result summary metrics.
+- `analytics/` contains result summary metrics and backtest reporting logic.
 - `data/` contains asset loading and simulation helpers.
-- `risk/` contains risk-management modules.
+- `risk_management/` contains risk-management models.
 
 ## Run
 
@@ -30,36 +30,27 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run against the default Monte Carlo sample:
-
-```bash
-python run_strategy_tests.py
-```
-
 Run with interactive prompts:
 
 ```bash
-python run_custom_strategy_tests.py
+python run_backtests.py
 ```
 
 The interactive runner offers presets first, then a custom mode. In custom mode, type `?` at any prompt for examples.
 
-Run against Yahoo Finance data:
-
-```bash
-python run_strategy_tests.py --source yfinance --symbol SPY --period 1y --interval 1d
-```
+Use the Yahoo Finance preset or custom mode for stock and ETF data.
 
 Yahoo Finance uses adjusted close as `price` when available, and falls back to close when adjusted close is unavailable.
 
-Run against Binance public candle data:
+Use the Binance presets or custom mode for public candle data.
 
-```bash
-python run_strategy_tests.py --source binance --symbol BTCUSDT --interval 1d --limit 1000
-```
+CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/year from the data, or you can override it in custom mode.
 
-CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/year from the data, or you can override it:
+## Future Ideas
 
-```bash
-python run_strategy_tests.py --source binance --symbol BTCUSDT --periods-per-year 365
-```
+- More risk-management models.
+- Strategy parameter presets.
+- Charts and saved reports.
+- Transaction costs, slippage, and fees.
+- Tests for strategies, metrics, and connectors.
+- More data sources and walk-forward testing.

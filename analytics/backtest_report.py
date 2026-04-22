@@ -1,17 +1,17 @@
 import argparse
 
-from connectors.binance_connector import load_binance_klines
-from connectors.yfinance_connector import load_yfinance_asset
-from data.asset_monte_carlo import load_asset
-from strategies.strategy_bollinger_band import backtest_bollinger_band
-from strategies.strategy_donchian_channel_breakout import backtest_donchian_channel_breakout
-from strategies.strategy_macd import backtest_macd
-from strategies.strategy_macd_bollinger_confirmation import backtest_macd_bollinger_confirmation
-from strategies.strategy_ma_cross import backtest_ma_cross
-from strategies.strategy_rsi_mean_reversion import backtest_rsi_mean_reversion
-from strategies.strategy_trend_rsi_pullback import backtest_trend_rsi_pullback
-from strategies.strategy_z_score_mean_reversion import backtest_z_score_mean_reversion
-from analytics.results_metrics import summarize_strategy_results
+from connectors.binance import load_binance_klines
+from connectors.yfinance import load_yfinance_asset
+from data.monte_carlo_asset import load_asset
+from strategies.bollinger_bands import backtest_bollinger_band
+from strategies.donchian_breakout import backtest_donchian_channel_breakout
+from strategies.macd import backtest_macd
+from strategies.macd_bollinger_confirmation import backtest_macd_bollinger_confirmation
+from strategies.moving_average_cross import backtest_ma_cross
+from strategies.rsi_mean_reversion import backtest_rsi_mean_reversion
+from strategies.trend_rsi_pullback import backtest_trend_rsi_pullback
+from strategies.zscore_mean_reversion import backtest_z_score_mean_reversion
+from analytics.performance_metrics import summarize_strategy_results
 
 
 STRATEGIES = {

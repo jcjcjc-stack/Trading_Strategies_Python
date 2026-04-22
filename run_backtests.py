@@ -1,6 +1,6 @@
 from argparse import Namespace
 
-from run_strategy_tests import run_tests
+from analytics.backtest_report import run_tests
 
 
 HELP = {

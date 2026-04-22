@@ -1,32 +1,29 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # assumes dataframe = asset
 # requires column: 'price'
 # datetime index already set
 
-def backtest_macd(asset, price_col='price',
-                  fast=12, slow=26, signal=9):
+def backtest_donchian_channel_breakout(asset, price_col='price',
+                                       entry_window=20, exit_window=10):
 
     df = asset.copy()
 
     # ---------- Indicators ----------
-    df['ema_fast'] = df[price_col].ewm(span=fast, adjust=False).mean()
-    df['ema_slow'] = df[price_col].ewm(span=slow, adjust=False).mean()
-
-    df['macd'] = df['ema_fast'] - df['ema_slow']
-    df['macd_signal'] = df['macd'].ewm(span=signal, adjust=False).mean()
-    df['histogram'] = df['macd'] - df['macd_signal']
+    df['donchian_high'] = df[price_col].rolling(window=entry_window).max().shift(1)
+    df['donchian_low'] = df[price_col].rolling(window=entry_window).min().shift(1)
+    df['exit_high'] = df[price_col].rolling(window=exit_window).max().shift(1)
+    df['exit_low'] = df[price_col].rolling(window=exit_window).min().shift(1)
 
     # ---------- Trading Signal ----------
-    # Entry/exit events based on MACD crossing the signal line.
-    prev_macd = df['macd'].shift(1)
-    prev_signal = df['macd_signal'].shift(1)
- 
-    df['long_entry'] = (df['macd'] > df['macd_signal']) & (prev_macd <= prev_signal)
-    df['long_exit'] = (df['macd'] < df['macd_signal']) & (prev_macd >= prev_signal)
-    df['short_entry'] = df['long_exit']
-    df['short_exit'] = df['long_entry']
+    # Breakout logic:
+    # long when price breaks above prior Donchian high
+    # short when price breaks below prior Donchian low
+    df['long_entry'] = df[price_col] > df['donchian_high']
+    df['long_exit'] = df[price_col] < df['exit_low']
+    df['short_entry'] = df[price_col] < df['donchian_low']
+    df['short_exit'] = df[price_col] > df['exit_high']
 
     # ---------- Position ----------
     df['signal_raw'] = 0
@@ -51,7 +48,6 @@ def backtest_macd(asset, price_col='price',
 
     # ---------- Returns ----------
     df['return'] = df[price_col].pct_change().fillna(0)
-
     df['strategy_return'] = df['position'] * df['return']
 
     # ---------- Equity Curve ----------
@@ -66,11 +62,11 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.asset_monte_carlo import load_asset
+    from data.monte_carlo_asset import load_asset
 
     asset = load_asset()
-    results = backtest_macd(asset)
+    results = backtest_donchian_channel_breakout(asset)
 
     print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("MACD Strategy:", results['cum_strategy'].iloc[-1])
+    print("Donchian Channel Breakout Strategy:", results['cum_strategy'].iloc[-1])
     print(results.tail())
