@@ -1,3 +1,7 @@
+import argparse
+
+from connectors.binance_connector import load_binance_klines
+from connectors.yfinance_connector import load_yfinance_asset
 from data.asset_monte_carlo import load_asset
 from strategies.strategy_bollinger_band import backtest_bollinger_band
 from strategies.strategy_donchian_channel_breakout import backtest_donchian_channel_breakout
@@ -22,9 +26,58 @@ STRATEGIES = {
 }
 
 
-def run_tests():
-    asset = load_asset()
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run backtests across available strategies.")
+    parser.add_argument(
+        "--source",
+        choices=["monte-carlo", "yfinance", "binance"],
+        default="monte-carlo",
+        help="Market data source to test against.",
+    )
+    parser.add_argument("--symbol", help="Ticker or trading pair, such as SPY or BTCUSDT.")
+    parser.add_argument("--start", help="Start date, such as 2024-01-01.")
+    parser.add_argument("--end", help="End date, such as 2025-01-01.")
+    parser.add_argument("--period", default="1y", help="Yahoo Finance lookback period.")
+    parser.add_argument("--interval", default="1d", help="Data interval, such as 1d or 1h.")
+    parser.add_argument("--limit", type=int, default=1000, help="Binance candle limit.")
+    parser.add_argument(
+        "--periods-per-year",
+        type=float,
+        help="Override periods/year for Sharpe and annualized volatility.",
+    )
 
+    return parser.parse_args()
+
+
+def load_test_asset(args):
+    if args.source == "yfinance":
+        return load_yfinance_asset(
+            symbol=args.symbol or "SPY",
+            start=args.start,
+            end=args.end,
+            period=args.period,
+            interval=args.interval,
+        )
+
+    if args.source == "binance":
+        return load_binance_klines(
+            symbol=args.symbol or "BTCUSDT",
+            interval=args.interval,
+            limit=args.limit,
+            start_time=args.start,
+            end_time=args.end,
+        )
+
+    return load_asset()
+
+
+def run_tests(args=None):
+    if args is None:
+        args = parse_args()
+
+    asset = load_test_asset(args)
+
+    print()
     print("Asset preview:")
     print(asset.head())
     print()
@@ -49,7 +102,10 @@ def run_tests():
 
     for strategy_name, backtest_function in STRATEGIES.items():
         results = backtest_function(asset)
-        metrics = summarize_strategy_results(results)
+        metrics = summarize_strategy_results(
+            results,
+            periods_per_year=args.periods_per_year,
+        )
         strategy_results.append((strategy_name, metrics))
 
     strategy_results = sorted(
@@ -74,6 +130,11 @@ def run_tests():
         )
     print("-" * len(header))    
 
+    periods_per_year = strategy_results[0][1]["periods_per_year"]
+    act_act_years = strategy_results[0][1]["act_act_years"]
+    print(f"Sharpe/Vol periods/year: {periods_per_year:.2f}")
+    print(f"CAGR ACT/ACT years: {act_act_years:.4f}")
+    print()
 
 if __name__ == "__main__":
     run_tests()
