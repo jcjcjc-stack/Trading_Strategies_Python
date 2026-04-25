@@ -20,7 +20,7 @@ Python playground for backtesting trading strategies and building research datas
 - `connectors/` contains market data connectors.
 - `strategies/` contains individual strategy backtests.
 - `analytics/` contains result summary metrics and backtest reporting logic.
-- `data/` contains asset loading and simulation helpers.
+- `research/optimization/` contains walk-forward hyperparameter tuning and saved tuned parameter outputs.
 - `research_data/` contains research/factor data helpers such as WRDS access.
 - `risk_management/` contains risk-management models.
 
@@ -32,13 +32,24 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run with interactive prompts:
+First, tune strategy hyperparameters:
+
+```bash
+python run_tuning.py
+```
+
+The tuning runner writes only the final selected parameters to `research/optimization/tuned_hyperparameters.txt`.
+It also writes tuning notes to `research/optimization/tuned_hyperparameters_metadata.txt`, including the data source, symbol, interval, row count, date range, walk-forward sizes, and tuning objective.
+
+Then run backtests:
 
 ```bash
 python run_backtests.py
 ```
 
-The interactive runner offers presets first, then a custom mode. In custom mode, type `?` at any prompt for examples.
+Both runners offer presets first, then a custom mode. In custom mode, type `?` at any prompt for examples.
+
+Backtests always read tuned strategy parameters from `research/optimization/tuned_hyperparameters.txt`. Before the strategy table, the report checks that the tuned ticker and interval match the selected backtest data, then asks you to confirm the tune.
 
 ## Data Sources
 
@@ -54,7 +65,7 @@ Research data:
 
 WRDS is kept under `research_data/` for factor datasets, CAPM research, fundamentals, and future ML features. WRDS access requires a WRDS account and may prompt for credentials or MFA approval.
 
-CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/year from the data, or you can override it in custom mode.
+CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/year from the data.
 
 ## Future Ideas
 
@@ -63,4 +74,4 @@ CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/
 - Charts and saved reports.
 - Transaction costs, slippage, and fees.
 - Tests for strategies, metrics, and connectors.
-- WRDS factor research, CAPM models, and walk-forward testing.
+- WRDS factor research, CAPM models, and predictive ML models.

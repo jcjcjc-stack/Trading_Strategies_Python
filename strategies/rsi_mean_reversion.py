@@ -62,18 +62,3 @@ def backtest_rsi_mean_reversion(asset, price_col='price',
     df['cum_strategy'] = (1 + df['strategy_return']).cumprod()
 
     return df
-
-
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.monte_carlo_asset import load_asset
-
-    asset = load_asset()
-    results = backtest_rsi_mean_reversion(asset)
-
-    print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("RSI Mean Reversion Strategy:", results['cum_strategy'].iloc[-1])
-    print(results.tail())

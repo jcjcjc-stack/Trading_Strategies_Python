@@ -25,7 +25,7 @@ def to_milliseconds(value):
 
 
 def load_binance_klines(
-    symbol="BTCUSDT",
+    symbol="BTCUSDC",
     interval="1d",
     limit=1000,
     start_time=None,

@@ -59,19 +59,3 @@ def backtest_crossover_sma(asset, price_col='price',
     df['cum_strategy'] = (1 + df['strategy_return']).cumprod()
 
     return df
-
-
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from data.monte_carlo_asset import load_asset
-
-    asset = load_asset()
-    results = backtest_crossover_sma(asset)
-
-    print("Buy & Hold:", results['cum_asset'].iloc[-1])
-    print("Crossover SMA Strategy:", results['cum_strategy'].iloc[-1])
-    print(results.tail())
-    print(results[['price', 'ma_fast','ma_slow']].head(15))

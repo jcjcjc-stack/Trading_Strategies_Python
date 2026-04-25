@@ -3,6 +3,7 @@ import pandas as pd
 
 
 TRADING_DAYS_PER_YEAR = 252
+MIN_CAGR_YEARS = 90 / 365.25
 
 
 def calculate_max_drawdown(equity_curve):
@@ -82,6 +83,10 @@ def calculate_cagr(equity_curve, years):
     return (final_value ** (1 / years)) - 1
 
 
+def is_cagr_unstable(years):
+    return pd.notna(years) and years < MIN_CAGR_YEARS
+
+
 def count_trades(signal):
     signal_changes = signal.diff().fillna(0) != 0
     entries = signal_changes & (signal != 0)
@@ -138,6 +143,7 @@ def summarize_strategy_results(results, periods_per_year=None):
         "mean": results["strategy_return"].mean(),
         "std": results["strategy_return"].std(),
         "cagr": calculate_cagr(results["cum_strategy"], years),
+        "cagr_is_unstable": is_cagr_unstable(years),
         "number_of_trades": count_trades(results["signal_raw"]),
         "periods_per_year": periods_per_year,
         "act_act_years": years,
