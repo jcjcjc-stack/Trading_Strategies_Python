@@ -20,7 +20,7 @@ Python playground for backtesting trading strategies and building research datas
 - `connectors/` contains market data connectors.
 - `strategies/` contains individual strategy backtests.
 - `analytics/` contains result summary metrics and backtest reporting logic.
-- `research/optimization/` contains walk-forward hyperparameter tuning and saved tuned parameter outputs.
+- `research/optimization/` contains rolling window tuning and saved tuned parameter outputs.
 - `research_data/` contains research/factor data helpers such as WRDS access.
 - `risk_management/` contains risk-management models.
 
@@ -39,7 +39,7 @@ python run_tuning.py
 ```
 
 The tuning runner writes only the final selected parameters to `research/optimization/tuned_hyperparameters.txt`.
-It also writes tuning notes to `research/optimization/tuned_hyperparameters_metadata.txt`, including the data source, symbol, interval, row count, date range, walk-forward sizes, and tuning objective.
+It also writes tuning notes to `research/optimization/tuned_hyperparameters_metadata.txt`, including the data source, symbol, interval, row count, date range, rolling window sizes, and tuning objective.
 
 Then run backtests:
 

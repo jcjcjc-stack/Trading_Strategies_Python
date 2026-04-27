@@ -28,7 +28,7 @@ def iter_parameter_grid(parameter_grid):
         yield dict(zip(keys, combination))
 
 
-def walk_forward_split(
+def rolling_split(
     data: pd.DataFrame,
     train_size: float = 0.6,
     test_size: float = 0.2,
@@ -43,10 +43,10 @@ def walk_forward_split(
     - 20% forward step between folds
     """
     if not isinstance(data.index, pd.DatetimeIndex):
-        raise TypeError("walk_forward_split requires a pandas DataFrame with a DateTimeIndex.")
+        raise TypeError("rolling_split requires a pandas DataFrame with a DateTimeIndex.")
 
     if data.empty:
-        raise ValueError("walk_forward_split requires at least one row.")
+        raise ValueError("rolling_split requires at least one row.")
 
     if not data.index.is_monotonic_increasing:
         raise ValueError("DateTimeIndex must be sorted in ascending order.")
@@ -143,7 +143,7 @@ def tune_parameters(
     return best
 
 
-def walk_forward_validate(
+def rolling_validate(
     data,
     backtest_function,
     parameter_grid,
@@ -159,7 +159,7 @@ def walk_forward_validate(
     fold_results = []
     test_results = []
 
-    for split in walk_forward_split(
+    for split in rolling_split(
         data,
         train_size=train_size,
         test_size=test_size,
@@ -190,7 +190,7 @@ def walk_forward_validate(
         test_results.append(test)
 
     if not test_results:
-        raise ValueError("Walk-forward validation did not produce any train/test folds.")
+        raise ValueError("Rolling validation did not produce any train/test folds.")
 
     combined_test = pd.concat(test_results).sort_index()
     combined_test = combined_test[~combined_test.index.duplicated(keep="first")].copy()
@@ -242,7 +242,7 @@ def to_jsonable(value):
 
 def select_final_parameters(folds):
     """
-    Pick one tuned parameter set from all walk-forward folds.
+    Pick one tuned parameter set from all rolling validation folds.
 
     The selected set is the one that appears most often across folds. Ties are
     resolved by average out-of-sample strategy return, then average train score.
@@ -265,7 +265,7 @@ def select_final_parameters(folds):
         candidates[key]["train_scores"].append(fold["train_score"])
 
     if not candidates:
-        raise ValueError("Cannot select final parameters without walk-forward folds.")
+        raise ValueError("Cannot select final parameters without rolling validation folds.")
 
     best = max(
         candidates.values(),
@@ -353,7 +353,7 @@ def tune_all_strategy_parameters(
     tuned_parameters = {}
 
     for strategy_name, backtest_function in strategies.items():
-        validation = walk_forward_validate(
+        validation = rolling_validate(
             data,
             backtest_function,
             parameter_grids[strategy_name],

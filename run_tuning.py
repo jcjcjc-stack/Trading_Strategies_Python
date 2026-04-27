@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument(
         "--step-size",
         type=float,
-        default=0.05,
+        default=0.2,
         help="Fraction of rows to move forward between folds.",
     )
     parser.add_argument(
@@ -109,7 +109,7 @@ def default_args(**overrides):
         "limit": 1000,
         "train_size": 0.6,
         "test_size": 0.2,
-        "step_size": 0.05,
+        "step_size": 0.2,
         "objective": "sharpe_ratio",
         "output": DEFAULT_TUNED_PARAMETERS_FILE,
     }
@@ -198,7 +198,7 @@ def choose_preset():
 def ask_tuning_args(args):
     args.train_size = ask_fraction("Train window fraction", 0.6)
     args.test_size = ask_fraction("Test window fraction", 0.2)
-    args.step_size = ask_fraction("Step forward fraction", 0.05)
+    args.step_size = ask_fraction("Step forward fraction", 0.2)
     args.objective = ask_choice(
         "Tuning objective",
         choices=["sharpe_ratio", "max_drawdown"],
@@ -247,11 +247,11 @@ def build_args():
 
 def tune_strategies(args):
     from analytics.backtest_report import PARAMETER_GRIDS, STRATEGIES, load_test_asset
-    from research.optimization.walk_forward import (
+    from research.optimization.rolling import (
+        rolling_validate,
         save_tuned_parameters,
         save_tuning_metadata,
         select_final_parameters,
-        walk_forward_validate,
     )
 
     asset = load_test_asset(args)
@@ -264,7 +264,7 @@ def tune_strategies(args):
 
     for strategy_name, backtest_function in STRATEGIES.items():
         print(f"Tuning {strategy_name}...")
-        validation = walk_forward_validate(
+        validation = rolling_validate(
             asset,
             backtest_function,
             PARAMETER_GRIDS[strategy_name],
@@ -301,7 +301,7 @@ def build_tuning_metadata(args, asset, output_path):
             "first_timestamp": data_start,
             "last_timestamp": data_end,
         },
-        "walk_forward": {
+        "rolling": {
             "train_size": args.train_size,
             "test_size": args.test_size,
             "step_size": args.step_size,

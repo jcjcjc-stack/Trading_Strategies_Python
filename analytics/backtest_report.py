@@ -14,7 +14,7 @@ from strategies.rsi_mean_reversion import backtest_rsi_mean_reversion
 from strategies.trend_rsi_pullback import backtest_trend_rsi_pullback
 from strategies.zscore_mean_reversion import backtest_z_score_mean_reversion
 from analytics.performance_metrics import summarize_strategy_results
-from research.optimization.walk_forward import (
+from research.optimization.rolling import (
     DEFAULT_TUNED_PARAMETERS_FILE,
     load_tuned_parameters,
     load_tuning_metadata,
@@ -125,12 +125,12 @@ def format_metadata_datetime(value):
 
 def selected_symbol(args):
     if args.source == "yfinance":
-        return args.symbol or "SPY"
+        return (args.symbol or "SPY").upper()
 
     if args.source == "binance":
-        return args.symbol or "BTCUSDC"
+        return (args.symbol or "BTCUSDC").upper()
 
-    return args.symbol or "n/a"
+    return (args.symbol or "n/a").upper()
 
 
 def selected_interval(args):
@@ -151,8 +151,8 @@ def format_metadata_date(value):
 
 def print_tune_check(metadata, args):
     data = metadata["data"]
-    walk_forward = metadata["walk_forward"]
-    tuned_symbol = format_metadata_value(data["symbol"])
+    rolling = metadata["rolling"]
+    tuned_symbol = str(format_metadata_value(data["symbol"])).upper()
     tuned_interval = format_metadata_value(data["interval"])
     backtest_symbol = selected_symbol(args)
     backtest_interval = selected_interval(args)
@@ -172,7 +172,13 @@ def print_tune_check(metadata, args):
         f"{format_metadata_date(data['first_timestamp'])} -> "
         f"{format_metadata_date(data['last_timestamp'])}"
     )
-    print(f"Objective   : {walk_forward['objective']}")
+    print(
+        "Rolling validation: "
+        f"train={rolling['train_size']}, "
+        f"test={rolling['test_size']}, "
+        f"step={rolling['step_size']}"
+    )
+    print(f"Objective   : {rolling['objective']}")
     print()
 
     if not is_match:
@@ -237,16 +243,6 @@ def run_tests(args=None):
     if args is None:
         args = parse_args()
 
-    asset = load_test_asset(args)
-
-    print()
-    print("Asset preview first rows:")
-    print(asset.head().round(2))
-    print()
-    print("Asset preview latest rows:")
-    print(asset.tail().round(2))
-    print()
-
     tuned_parameters = load_tuned_parameters()
 
     try:
@@ -268,6 +264,16 @@ def run_tests(args=None):
             f"{DEFAULT_TUNED_PARAMETERS_FILE} is missing tuned params for: {missing}. "
             "Run python run_tuning.py before run_backtests.py."
         )
+
+    asset = load_test_asset(args)
+
+    print()
+    print("Asset preview first rows:")
+    print(asset.head().round(2))
+    print()
+    print("Asset preview latest rows:")
+    print(asset.tail().round(2))
+    print()
 
     print(f"Strategy results using tuned parameters for {selected_symbol(args)} ({args.source}):")
     header = (
