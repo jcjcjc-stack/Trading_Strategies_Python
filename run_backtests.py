@@ -11,7 +11,7 @@ HELP = {
     "interval_yfinance": "Yahoo examples: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo.",
     "interval_binance": "Binance examples: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M.",
     "date": "Use yyyy-mm-dd, for example 2024-01-01. Leave blank to skip.",
-    "limit": "Number of candles to request from Binance. Common range: 100 to 1000.",
+    "limit": "Number of recent Binance candles to request when no start date is provided.",
 }
 
 PRESETS = {
@@ -53,7 +53,7 @@ def default_args(**overrides):
         "end": None,
         "period": "1y",
         "interval": "1d",
-        "limit": 1000,
+        "limit": None,
     }
     values.update(overrides)
     return Namespace(**values)
@@ -137,9 +137,10 @@ def build_custom_args():
     elif source == "binance":
         args.symbol = ask("Binance pair", "BTCUSDC", "symbol_binance")
         args.interval = ask("Binance interval", "1d", "interval_binance")
-        args.limit = ask_int("Candle limit", 1000, "limit")
         args.start = ask("Start date optional", help_key="date")
         args.end = ask("End date optional", help_key="date")
+        if args.start is None:
+            args.limit = ask_int("Candle limit", 1000, "limit")
 
     return args
 

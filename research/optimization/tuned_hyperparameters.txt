@@ -1,49 +1,49 @@
 {
   "Bollinger Band": {
     "num_std": 2.0,
-    "window": 10
+    "window": 20
   },
   "Crossover EMA": {
-    "fast_window": 8,
-    "slow_window": 26
+    "fast_window": 16,
+    "slow_window": 34
   },
   "Crossover SMA": {
     "fast_window": 30,
-    "slow_window": 100
+    "slow_window": 50
   },
   "Donchian Channel Breakout": {
-    "entry_window": 60,
-    "exit_window": 10
+    "entry_window": 20,
+    "exit_window": 30
   },
   "MACD": {
-    "fast": 12,
+    "fast": 8,
     "signal": 9,
-    "slow": 34
+    "slow": 21
   },
   "MACD Bollinger Confirmation": {
     "bb_window": 20,
     "fast": 12,
     "num_std": 2.0,
     "signal": 9,
-    "slow": 26
+    "slow": 21
   },
   "RSI Mean Reversion": {
     "exit_level": 50,
     "overbought": 75,
     "oversold": 30,
-    "rsi_window": 10
+    "rsi_window": 21
   },
   "Trend RSI Pullback": {
-    "long_rsi_entry": 35,
-    "long_rsi_exit": 55,
+    "long_rsi_entry": 40,
+    "long_rsi_exit": 60,
     "rsi_window": 14,
-    "short_rsi_entry": 60,
+    "short_rsi_entry": 65,
     "short_rsi_exit": 40,
     "trend_window": 100
   },
   "Z Score Mean Reversion": {
     "entry_z": 2.0,
     "exit_z": 0.5,
-    "window": 10
+    "window": 20
   }
 }

@@ -14,7 +14,7 @@ HELP = {
     "interval_yfinance": "Yahoo examples: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo.",
     "interval_binance": "Binance examples: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M.",
     "date": "Use yyyy-mm-dd, for example 2024-01-01. Leave blank to skip.",
-    "limit": "Number of candles to request from Binance. Common range: 100 to 1000.",
+    "limit": "Number of recent Binance candles to request when no start date is provided.",
 }
 
 PRESETS = {
@@ -64,24 +64,24 @@ def parse_args():
     parser.add_argument("--end", help="End date, such as 2025-01-01.")
     parser.add_argument("--period", default="1y", help="Yahoo Finance lookback period.")
     parser.add_argument("--interval", default="1d", help="Data interval, such as 1d or 1h.")
-    parser.add_argument("--limit", type=int, default=1000, help="Binance candle limit.")
+    parser.add_argument("--limit", type=int, help="Binance latest-candle limit.")
     parser.add_argument(
         "--train-size",
         type=float,
         default=0.6,
-        help="Fraction of rows used for each training window.",
+        help="Fraction of rows used for training data.",
+    )
+    parser.add_argument(
+        "--validation-size",
+        type=float,
+        default=0.2,
+        help="Fraction of rows used for validation data.",
     )
     parser.add_argument(
         "--test-size",
         type=float,
         default=0.2,
-        help="Fraction of rows used for each test window.",
-    )
-    parser.add_argument(
-        "--step-size",
-        type=float,
-        default=0.2,
-        help="Fraction of rows to move forward between folds.",
+        help="Fraction of rows kept for final test data.",
     )
     parser.add_argument(
         "--objective",
@@ -89,13 +89,14 @@ def parse_args():
         default="sharpe_ratio",
         help="Training metric used to choose hyperparameters.",
     )
-    parser.add_argument(
-        "--output",
-        default=str(DEFAULT_TUNED_PARAMETERS_FILE),
-        help="Text file that receives tuned hyperparameters.",
-    )
+    parser.set_defaults(output=DEFAULT_TUNED_PARAMETERS_FILE)
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    total = args.train_size + args.validation_size + args.test_size
+    if not abs(total - 1.0) < 1e-9:
+        parser.error("--train-size, --validation-size, and --test-size must add up to 1.")
+
+    return args
 
 
 def default_args(**overrides):
@@ -106,10 +107,10 @@ def default_args(**overrides):
         "end": None,
         "period": "1y",
         "interval": "1d",
-        "limit": 1000,
+        "limit": None,
         "train_size": 0.6,
+        "validation_size": 0.2,
         "test_size": 0.2,
-        "step_size": 0.2,
         "objective": "sharpe_ratio",
         "output": DEFAULT_TUNED_PARAMETERS_FILE,
     }
@@ -197,14 +198,16 @@ def choose_preset():
 
 def ask_tuning_args(args):
     args.train_size = ask_fraction("Train window fraction", 0.6)
-    args.test_size = ask_fraction("Test window fraction", 0.2)
-    args.step_size = ask_fraction("Step forward fraction", 0.2)
+    args.validation_size = ask_fraction("Validation data fraction", 0.2)
+    args.test_size = ask_fraction("Test data fraction", 0.2)
+    total = args.train_size + args.validation_size + args.test_size
+    if not abs(total - 1.0) < 1e-9:
+        raise SystemExit("Train, validation, and test fractions must add up to 1.")
     args.objective = ask_choice(
         "Tuning objective",
         choices=["sharpe_ratio", "max_drawdown"],
         default="sharpe_ratio",
     )
-    args.output = ask("Output file", DEFAULT_TUNED_PARAMETERS_FILE)
     return args
 
 
@@ -222,15 +225,16 @@ def build_custom_args():
         args.symbol = ask("Yahoo ticker", "SPY", "symbol_yfinance")
         args.period = ask("Yahoo period", "1y", "period")
         args.interval = ask("Yahoo interval", "1d", "interval_yfinance")
-        args.start = ask("Start date optional", help_key="date")
-        args.end = ask("End date optional", help_key="date")
+        args.start = ask("Start date (optional)", help_key="date")
+        args.end = ask("End date (optional)", help_key="date")
 
     elif source == "binance":
         args.symbol = ask("Binance pair", "BTCUSDC", "symbol_binance")
         args.interval = ask("Binance interval", "1d", "interval_binance")
-        args.limit = ask_int("Candle limit", 1000, "limit")
-        args.start = ask("Start date optional", help_key="date")
-        args.end = ask("End date optional", help_key="date")
+        args.start = ask("Start date (optional)", help_key="date")
+        args.end = ask("End date (optional)", help_key="date")
+        if args.start is None:
+            args.limit = ask_int("Candle limit", 1000, "limit")
 
     return ask_tuning_args(args)
 
@@ -269,8 +273,8 @@ def tune_strategies(args):
             backtest_function,
             PARAMETER_GRIDS[strategy_name],
             train_size=args.train_size,
+            validation_size=args.validation_size,
             test_size=args.test_size,
-            step_size=args.step_size,
             objective=args.objective,
         )
         tuned_parameters[strategy_name] = select_final_parameters(validation["folds"])
@@ -303,8 +307,8 @@ def build_tuning_metadata(args, asset, output_path):
         },
         "rolling": {
             "train_size": args.train_size,
+            "validation_size": args.validation_size,
             "test_size": args.test_size,
-            "step_size": args.step_size,
             "objective": args.objective,
         },
         "run_backtests_note": "run_backtests.py always reads this tuned parameter file.",

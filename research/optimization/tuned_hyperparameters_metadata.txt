@@ -1,23 +1,23 @@
 {
-  "created_at_utc": "2026-04-25T09:52:36+00:00",
+  "created_at_utc": "2026-04-27T08:00:27+00:00",
   "data": {
     "end_arg": null,
-    "first_timestamp": "2023-07-31T00:00:00+00:00",
-    "interval": "1d",
-    "last_timestamp": "2026-04-25T00:00:00+00:00",
-    "limit": 1000,
+    "first_timestamp": "2025-10-01T00:00:00+00:00",
+    "interval": "1h",
+    "last_timestamp": "2026-04-27T07:00:00+00:00",
+    "limit": 5000,
     "period": "1y",
-    "rows": 1000,
+    "rows": 5000,
     "source": "binance",
     "start_arg": null,
     "symbol": "BTCUSDC"
   },
-  "run_backtests_note": "run_backtests.py always reads this tuned parameter file.",
-  "tuned_parameters_file": "research\\optimization\\tuned_hyperparameters.txt",
   "rolling": {
     "objective": "sharpe_ratio",
-    "step_size": 0.05,
     "test_size": 0.2,
-    "train_size": 0.6
-  }
+    "train_size": 0.6,
+    "validation_size": 0.2
+  },
+  "run_backtests_note": "run_backtests.py always reads this tuned parameter file.",
+  "tuned_parameters_file": "research\\optimization\\tuned_hyperparameters.txt"
 }

@@ -31,16 +31,13 @@ def iter_parameter_grid(parameter_grid):
 def rolling_split(
     data: pd.DataFrame,
     train_size: float = 0.6,
-    test_size: float = 0.2,
-    step_size: float = 0.2,
+    validation_size: float = 0.2,
 ) -> Generator[dict[str, object], None, None]:
     """
-    Yield rolling train/test windows from a time-indexed DataFrame.
+    Yield rolling train/validation windows from a time-indexed DataFrame.
 
-    Defaults implement a 60-20-20 split:
-    - 60% initial training window
-    - 20% test window
-    - 20% forward step between folds
+    Defaults use 60% of the full dataset for training and 20% for validation.
+    The final 20% is kept as test data outside this splitter.
     """
     if not isinstance(data.index, pd.DatetimeIndex):
         raise TypeError("rolling_split requires a pandas DataFrame with a DateTimeIndex.")
@@ -54,47 +51,44 @@ def rolling_split(
     if data.index.has_duplicates:
         raise ValueError("DateTimeIndex must not contain duplicate timestamps.")
 
-    for name, value in {
-        "train_size": train_size,
-        "test_size": test_size,
-        "step_size": step_size,
-    }.items():
+    sizes = {"train_size": train_size, "validation_size": validation_size}
+    for name, value in sizes.items():
         if not 0 < value < 1:
             raise ValueError(f"{name} must be between 0 and 1.")
 
     total = len(data)
     train_rows = int(total * train_size)
-    test_rows = int(total * test_size)
-    step_rows = int(total * step_size)
+    validation_rows = int(total * validation_size)
 
-    if train_rows == 0 or test_rows == 0 or step_rows == 0:
+    if train_rows == 0 or validation_rows == 0:
         raise ValueError("Split sizes are too small for the number of rows in data.")
 
+    advance_rows = validation_rows
     fold = 1
     train_start = 0
 
     while True:
         train_end = train_start + train_rows
-        test_end = train_end + test_rows
+        validation_end = train_end + validation_rows
 
-        if test_end > total:
+        if validation_end > total:
             break
 
         train = data.iloc[train_start:train_end].copy()
-        test = data.iloc[train_end:test_end].copy()
+        validation = data.iloc[train_end:validation_end].copy()
 
         yield {
             "fold": fold,
             "train": train,
-            "test": test,
+            "validation": validation,
             "train_start": train.index[0],
             "train_end": train.index[-1],
-            "test_start": test.index[0],
-            "test_end": test.index[-1],
+            "validation_start": validation.index[0],
+            "validation_end": validation.index[-1],
         }
 
         fold += 1
-        train_start += step_rows
+        train_start += advance_rows
 
 
 def metric_score(metrics, objective="sharpe_ratio"):
@@ -148,22 +142,32 @@ def rolling_validate(
     backtest_function,
     parameter_grid,
     train_size=0.6,
+    validation_size=0.2,
     test_size=0.2,
-    step_size=None,
     periods_per_year=None,
     objective="sharpe_ratio",
 ):
-    if step_size is None:
-        step_size = test_size
+    total_size = train_size + validation_size + test_size
+    if not np.isclose(total_size, 1.0):
+        raise ValueError("train_size, validation_size, and test_size must add up to 1.")
+
+    test_rows = int(len(data) * test_size)
+    if test_rows == 0:
+        raise ValueError("test_size is too small for the number of rows in data.")
+
+    rolling_data = data.iloc[:-test_rows].copy()
+    final_test_data = data.iloc[-test_rows:].copy()
+    rolling_total = train_size + validation_size
+    rolling_train_size = train_size / rolling_total
+    rolling_validation_size = validation_size / rolling_total
 
     fold_results = []
-    test_results = []
+    validation_results = []
 
     for split in rolling_split(
-        data,
-        train_size=train_size,
-        test_size=test_size,
-        step_size=step_size,
+        rolling_data,
+        train_size=rolling_train_size,
+        validation_size=rolling_validation_size,
     ):
         tuned = tune_parameters(
             split["train"],
@@ -173,10 +177,13 @@ def rolling_validate(
             objective=objective,
         )
 
-        evaluation_data = pd.concat([split["train"], split["test"]])
+        evaluation_data = pd.concat([split["train"], split["validation"]])
         evaluated = backtest_function(evaluation_data, **tuned["params"])
-        test = reset_equity_curves(evaluated.loc[split["test"].index])
-        test_metrics = summarize_strategy_results(test, periods_per_year=periods_per_year)
+        validation = reset_equity_curves(evaluated.loc[split["validation"].index])
+        validation_metrics = summarize_strategy_results(
+            validation,
+            periods_per_year=periods_per_year,
+        )
 
         fold_results.append(
             {
@@ -184,19 +191,21 @@ def rolling_validate(
                 "best_params": tuned["params"],
                 "train_metrics": tuned["metrics"],
                 "train_score": tuned["score"],
-                "test_metrics": test_metrics,
+                "validation_metrics": validation_metrics,
             }
         )
-        test_results.append(test)
+        validation_results.append(validation)
 
-    if not test_results:
-        raise ValueError("Rolling validation did not produce any train/test folds.")
+    if not validation_results:
+        raise ValueError("Rolling validation did not produce any train/validation folds.")
 
-    combined_test = pd.concat(test_results).sort_index()
-    combined_test = combined_test[~combined_test.index.duplicated(keep="first")].copy()
-    combined_test = reset_equity_curves(combined_test)
+    combined_validation = pd.concat(validation_results).sort_index()
+    combined_validation = combined_validation[
+        ~combined_validation.index.duplicated(keep="first")
+    ].copy()
+    combined_validation = reset_equity_curves(combined_validation)
 
-    metrics = summarize_strategy_results(combined_test, periods_per_year=periods_per_year)
+    metrics = summarize_strategy_results(combined_validation, periods_per_year=periods_per_year)
     metrics["folds"] = len(fold_results)
     metrics["best_params_by_fold"] = [fold["best_params"] for fold in fold_results]
     metrics["avg_train_score"] = float(np.mean([fold["train_score"] for fold in fold_results]))
@@ -204,7 +213,8 @@ def rolling_validate(
     return {
         "metrics": metrics,
         "folds": fold_results,
-        "combined_test": combined_test,
+        "combined_validation": combined_validation,
+        "final_test_data": final_test_data,
     }
 
 
@@ -245,7 +255,7 @@ def select_final_parameters(folds):
     Pick one tuned parameter set from all rolling validation folds.
 
     The selected set is the one that appears most often across folds. Ties are
-    resolved by average out-of-sample strategy return, then average train score.
+    resolved by average validation return, then average train score.
     """
     candidates = {}
 
@@ -256,12 +266,14 @@ def select_final_parameters(folds):
             candidates[key] = {
                 "params": fold["best_params"],
                 "count": 0,
-                "test_returns": [],
+                "validation_returns": [],
                 "train_scores": [],
             }
 
         candidates[key]["count"] += 1
-        candidates[key]["test_returns"].append(fold["test_metrics"]["strategy_return"])
+        candidates[key]["validation_returns"].append(
+            fold["validation_metrics"]["strategy_return"]
+        )
         candidates[key]["train_scores"].append(fold["train_score"])
 
     if not candidates:
@@ -271,7 +283,7 @@ def select_final_parameters(folds):
         candidates.values(),
         key=lambda item: (
             item["count"],
-            np.nanmean(item["test_returns"]),
+            np.nanmean(item["validation_returns"]),
             np.nanmean(item["train_scores"]),
         ),
     )
@@ -339,8 +351,8 @@ def tune_all_strategy_parameters(
     parameter_grids,
     output_path=DEFAULT_TUNED_PARAMETERS_FILE,
     train_size=0.6,
+    validation_size=0.2,
     test_size=0.2,
-    step_size=None,
     periods_per_year=None,
     objective="sharpe_ratio",
 ):
@@ -358,8 +370,8 @@ def tune_all_strategy_parameters(
             backtest_function,
             parameter_grids[strategy_name],
             train_size=train_size,
+            validation_size=validation_size,
             test_size=test_size,
-            step_size=step_size,
             periods_per_year=periods_per_year,
             objective=objective,
         )

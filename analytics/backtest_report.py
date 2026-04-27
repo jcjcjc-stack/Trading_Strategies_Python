@@ -175,8 +175,8 @@ def print_tune_check(metadata, args):
     print(
         "Rolling validation: "
         f"train={rolling['train_size']}, "
-        f"test={rolling['test_size']}, "
-        f"step={rolling['step_size']}"
+        f"validation={rolling['validation_size']}, "
+        f"test={rolling['test_size']}"
     )
     print(f"Objective   : {rolling['objective']}")
     print()
@@ -212,7 +212,7 @@ def parse_args():
     parser.add_argument("--end", help="End date, such as 2025-01-01.")
     parser.add_argument("--period", default="1y", help="Yahoo Finance lookback period.")
     parser.add_argument("--interval", default="1d", help="Data interval, such as 1d or 1h.")
-    parser.add_argument("--limit", type=int, default=1000, help="Binance candle limit.")
+    parser.add_argument("--limit", type=int, help="Binance latest-candle limit.")
 
     return parser.parse_args()
 

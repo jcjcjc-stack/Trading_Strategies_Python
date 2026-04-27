@@ -39,7 +39,7 @@ python run_tuning.py
 ```
 
 The tuning runner writes only the final selected parameters to `research/optimization/tuned_hyperparameters.txt`.
-It also writes tuning notes to `research/optimization/tuned_hyperparameters_metadata.txt`, including the data source, symbol, interval, row count, date range, rolling window sizes, and tuning objective.
+It also writes tuning notes to `research/optimization/tuned_hyperparameters_metadata.txt`, including the data source, symbol, interval, row count, date range, 60/20/20 train-validation-test split, and tuning objective.
 
 Then run backtests:
 
