@@ -9,7 +9,7 @@ DEFAULT_TUNED_PARAMETERS_FILE = "research/optimization/tuned_hyperparameters.txt
 HELP = {
     "source": "Use yfinance for stocks/ETFs, or binance for crypto pairs.",
     "symbol_yfinance": "Examples: SPY, AAPL, MSFT, QQQ.",
-    "symbol_binance": "Examples: BTCUSDC, ETHUSDC, SOLUSDC.",
+    "symbol_binance": "Examples: BTCUSDT, ETHUSDT, SOLUSDT.",
     "period": "Yahoo examples: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.",
     "interval_yfinance": "Yahoo examples: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo.",
     "interval_binance": "Binance examples: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M.",
@@ -19,19 +19,19 @@ HELP = {
 
 PRESETS = {
     "1": {
-        "label": "BTCUSDC daily, 1000 candles",
+        "label": "BTCUSDT daily, 1000 candles",
         "args": {
             "source": "binance",
-            "symbol": "BTCUSDC",
+            "symbol": "BTCUSDT",
             "interval": "1d",
             "limit": 1000,
         },
     },
     "2": {
-        "label": "BTCUSDC hourly, 1000 candles",
+        "label": "BTCUSDT hourly, 1000 candles",
         "args": {
             "source": "binance",
-            "symbol": "BTCUSDC",
+            "symbol": "BTCUSDT",
             "interval": "1h",
             "limit": 1000,
         },
@@ -59,7 +59,7 @@ def parse_args():
         default="binance",
         help="Market data source used for tuning.",
     )
-    parser.add_argument("--symbol", default="BTCUSDC", help="Ticker or trading pair, such as SPY or BTCUSDC.")
+    parser.add_argument("--symbol", default="BTCUSDT", help="Ticker or trading pair, such as SPY or BTCUSDT.")
     parser.add_argument("--start", help="Start date, such as 2024-01-01.")
     parser.add_argument("--end", help="End date, such as 2025-01-01.")
     parser.add_argument("--period", default="1y", help="Yahoo Finance lookback period.")
@@ -102,7 +102,7 @@ def parse_args():
 def default_args(**overrides):
     values = {
         "source": "binance",
-        "symbol": "BTCUSDC",
+        "symbol": "BTCUSDT",
         "start": None,
         "end": None,
         "period": "1y",
@@ -229,7 +229,7 @@ def build_custom_args():
         args.end = ask("End date (optional)", help_key="date")
 
     elif source == "binance":
-        args.symbol = ask("Binance pair", "BTCUSDC", "symbol_binance")
+        args.symbol = ask("Binance pair", "BTCUSDT", "symbol_binance")
         args.interval = ask("Binance interval", "1d", "interval_binance")
         args.start = ask("Start date (optional)", help_key="date")
         args.end = ask("End date (optional)", help_key="date")

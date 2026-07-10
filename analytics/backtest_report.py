@@ -128,7 +128,7 @@ def selected_symbol(args):
         return (args.symbol or "SPY").upper()
 
     if args.source == "binance":
-        return (args.symbol or "BTCUSDC").upper()
+        return (args.symbol or "BTCUSDT").upper()
 
     return (args.symbol or "n/a").upper()
 
@@ -207,7 +207,7 @@ def parse_args():
         default="yfinance",
         help="Market data source to test against.",
     )
-    parser.add_argument("--symbol", help="Ticker or trading pair, such as SPY or BTCUSDC.")
+    parser.add_argument("--symbol", help="Ticker or trading pair, such as SPY or BTCUSDT.")
     parser.add_argument("--start", help="Start date, such as 2024-01-01.")
     parser.add_argument("--end", help="End date, such as 2025-01-01.")
     parser.add_argument("--period", default="1y", help="Yahoo Finance lookback period.")
@@ -229,7 +229,7 @@ def load_test_asset(args):
 
     if args.source == "binance":
         return load_binance_klines(
-            symbol=args.symbol or "BTCUSDC",
+            symbol=args.symbol or "BTCUSDT",
             interval=args.interval,
             limit=args.limit,
             start_time=args.start,

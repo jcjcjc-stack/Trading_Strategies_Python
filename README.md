@@ -1,6 +1,6 @@
-# Trading Strategies Python
+# ta_backtest_lab
 
-Python playground for backtesting trading strategies and building research datasets for factor models.
+Python playground for technical-analysis strategy backtesting and hyperparameter tuning.
 
 ## Included Strategies
 
@@ -21,8 +21,7 @@ Python playground for backtesting trading strategies and building research datas
 - `strategies/` contains individual strategy backtests.
 - `analytics/` contains result summary metrics and backtest reporting logic.
 - `research/optimization/` contains rolling window tuning and saved tuned parameter outputs.
-- `research_data/` contains research/factor data helpers such as WRDS access.
-- `risk_management/` contains risk-management models.
+- `risk_management/` contains technical risk controls such as ATR stop loss and take profit logic.
 
 ## Run
 
@@ -61,17 +60,13 @@ Yahoo Finance uses adjusted close as `price` when available, and falls back to c
 
 Use the Binance presets or custom mode for public candle data.
 
-Research data:
-
-WRDS is kept under `research_data/` for factor datasets, CAPM research, fundamentals, and future ML features. WRDS access requires a WRDS account and may prompt for credentials or MFA approval.
-
 CAGR uses ACT/ACT elapsed years. Sharpe and annualized volatility infer periods/year from the data.
 
 ## Future Ideas
 
-- More risk-management models.
+- More technical risk controls.
 - Strategy parameter presets.
 - Charts and saved reports.
 - Transaction costs, slippage, and fees.
 - Tests for strategies, metrics, and connectors.
-- WRDS factor research, CAPM models, and predictive ML models.
+- add PostgreSQL for collection of tuning data and backtest outputs

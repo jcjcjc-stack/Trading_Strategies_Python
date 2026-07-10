@@ -6,7 +6,7 @@ from urllib.request import urlopen
 import pandas as pd
 
 
-BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+BINANCE_KLINES_URL = "https://fapi.binance.com/fapi/v1/klines"
 BINANCE_MAX_KLINES_LIMIT = 1000
 
 
@@ -26,7 +26,7 @@ def to_milliseconds(value):
 
 
 def load_binance_klines(
-    symbol="BTCUSDC",
+    symbol="BTCUSDT",
     interval="1d",
     limit=1000,
     start_time=None,
